@@ -1,0 +1,38 @@
+{
+  "_comment": "These files from /src/static/* would be used as seed files for aymuOS, and would be placed in the aymu file system",
+  "markdowns": [
+    {
+      "id": "1",
+      "name": "Understanding the Stock Market",
+      "path": "./md/understanding-the-stock-market.md",
+      "tags": ["finance", "stock market", "investment"],
+      "location": "/home/Documents/understanding-the-stock-market.md"
+    }
+  ],
+  "images": [
+    {
+      "id": "1",
+      "name": "aymuOS Preview",
+      "path": "./images/aymuos-preview.png",
+      "tags": ["os", "preview", "screenshot"],
+      "location": "/home/Pictures/aymuos-preview.png"
+    }
+  ],
+  "songs": [
+    {
+      "id": "1",
+      "name": "In The Glow of Our Love",
+      "path": "./musics/In The Glow of Our Love - SFoura (Official Music).mp3",
+      "tags": ["music", "song"],
+      "location": "/home/Music/In The Glow of Our Love - SFoura (Official Music).mp3"
+    },
+    {
+      "id": "2",
+      "name": "Unstoppable",
+      "path": "./musics/Unstoppable.mp3",
+      "tags": ["music", "song", "rock"],
+      "location": "/home/Music/Unstoppable.mp3"
+    }
+  ]
+}
+

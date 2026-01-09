@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { FileSystemNode } from '@/types/os';
+import { generateSeedFiles } from '@/utils/seedFileSystem';
 
 interface FileStore {
   files: FileSystemNode[];
@@ -22,7 +23,8 @@ interface FileStore {
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
-const defaultFileSystem: FileSystemNode[] = [
+// Base file system structure (folders and system files)
+const baseFileSystem: FileSystemNode[] = [
   // Root folders
   { id: 'home', name: 'home', type: 'folder', path: '/home', parentId: null, createdAt: new Date(), modifiedAt: new Date() },
   { id: 'usr', name: 'usr', type: 'folder', path: '/usr', parentId: null, createdAt: new Date(), modifiedAt: new Date() },
@@ -34,28 +36,6 @@ const defaultFileSystem: FileSystemNode[] = [
   { id: 'downloads', name: 'Downloads', type: 'folder', path: '/home/Downloads', parentId: 'home', createdAt: new Date(), modifiedAt: new Date() },
   { id: 'pictures', name: 'Pictures', type: 'folder', path: '/home/Pictures', parentId: 'home', createdAt: new Date(), modifiedAt: new Date() },
   { id: 'music', name: 'Music', type: 'folder', path: '/home/Music', parentId: 'home', createdAt: new Date(), modifiedAt: new Date() },
-
-  // Music files
-  {
-    id: 'music-1',
-    name: 'In The Glow of Our Love - SFoura (Official Music).mp3',
-    type: 'file',
-    path: '/home/Music/In The Glow of Our Love - SFoura (Official Music).mp3',
-    parentId: 'music',
-    content: '/musics/In The Glow of Our Love - SFoura (Official Music).mp3', // Store the public path in content
-    createdAt: new Date(),
-    modifiedAt: new Date()
-  },
-  {
-    id: 'music-2',
-    name: 'Unstoppable.mp3',
-    type: 'file',
-    path: '/home/Music/Unstoppable.mp3',
-    parentId: 'music',
-    content: '/musics/Unstoppable.mp3', // Store the public path in content
-    createdAt: new Date(),
-    modifiedAt: new Date()
-  },
 
   // Sample files
   {
@@ -89,6 +69,10 @@ const defaultFileSystem: FileSystemNode[] = [
     modifiedAt: new Date()
   },
 ];
+
+// Generate seed files from manifest and combine with base file system
+const seedFiles = generateSeedFiles(baseFileSystem);
+const defaultFileSystem: FileSystemNode[] = [...baseFileSystem, ...seedFiles];
 
 export const useFileStore = create<FileStore>()(
   persist(

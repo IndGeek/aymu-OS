@@ -135,6 +135,19 @@ export function FinderApp({ windowId }: FinderAppProps) {
         return;
       }
 
+      // Handle image files
+      const isImageFile = lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.gif') || lower.endsWith('.webp') || lower.endsWith('.svg');
+
+      if (isImageFile) {
+        // For images, open a simple image viewer
+        // We'll create a custom modal or use the content field which should have the public path
+        if (item.content) {
+          // Open image in a new window/tab
+          window.open(item.content, '_blank');
+        }
+        return;
+      }
+
       const isTextLike =
         lower.endsWith('.txt') ||
         lower.endsWith('.md') ||
@@ -254,6 +267,11 @@ export function FinderApp({ windowId }: FinderAppProps) {
     // Music files
     if (lower.endsWith('.mp3') || lower.endsWith('.wav') || lower.endsWith('.ogg') || lower.endsWith('.m4a')) {
       return <Music className="w-full h-full text-primary" />;
+    }
+
+    // Image files
+    if (lower.endsWith('.png') || lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.gif') || lower.endsWith('.webp') || lower.endsWith('.svg')) {
+      return <Image className="w-full h-full text-primary" />;
     }
 
     if (lower.endsWith('.md') || lower.endsWith('.markdown')) {

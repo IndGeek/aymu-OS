@@ -32,7 +32,7 @@ interface Tab {
 
 export function NotepadApp({ windowId, fileId }: NotepadAppProps) {
   const getNodeById = useFileStore((state) => state.getNodeById);
-  
+
   // Initialize with the file if provided
   const detectLanguageFromName = (name: string): Language => {
     const lower = name.toLowerCase();
@@ -51,6 +51,36 @@ export function NotepadApp({ windowId, fileId }: NotepadAppProps) {
     if (fileId) {
       const file = getNodeById(fileId);
       if (file && file.type === 'file') {
+        // Check if content is a URL path (starts with / or http)
+        const isUrl = file.content?.startsWith('/') || file.content?.startsWith('http');
+
+        if (isUrl && file.content) {
+          // Fetch content from URL asynchronously
+          fetch(file.content)
+            .then(res => res.text())
+            .then(content => {
+              setTabs(prev => prev.map(t =>
+                t.id === '1' ? { ...t, content } : t
+              ));
+            })
+            .catch(err => {
+              console.error('Failed to fetch file content:', err);
+              setTabs(prev => prev.map(t =>
+                t.id === '1' ? { ...t, content: `Error loading file: ${err.message}` } : t
+              ));
+            });
+
+          // Return initial tab with loading message
+          return {
+            id: '1',
+            title: file.name,
+            content: 'Loading...',
+            fileId: file.id,
+            isModified: false,
+            language: detectLanguageFromName(file.name),
+          };
+        }
+
         return {
           id: '1',
           title: file.name,
@@ -101,7 +131,7 @@ export function NotepadApp({ windowId, fileId }: NotepadAppProps) {
   const handleCloseTab = (tabId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     soundManager.playTick();
-    
+
     if (tabs.length === 1) {
       // Keep at least one tab
       setTabs([{ id: '1', title: 'Untitled.txt', content: '', isModified: false, language: 'plaintext' }]);
@@ -197,7 +227,7 @@ export function NotepadApp({ windowId, fileId }: NotepadAppProps) {
 
   const handleSave = () => {
     if (!activeTab) return;
-    
+
     if (activeTab.fileId) {
       // Update existing file
       updateFileContent(activeTab.fileId, activeTab.content);
@@ -217,43 +247,43 @@ export function NotepadApp({ windowId, fileId }: NotepadAppProps) {
 
   const handleSaveAs = () => {
     if (!saveFileName.trim()) return;
-    
+
     const extension =
       activeTab?.language === 'markdown'
         ? '.md'
         : activeTab?.language === 'javascript'
-        ? '.js'
-        : activeTab?.language === 'typescript'
-        ? '.ts'
-        : activeTab?.language === 'json'
-        ? '.json'
-        : activeTab?.language === 'css'
-        ? '.css'
-        : activeTab?.language === 'html'
-        ? '.html'
-        : activeTab?.language === 'bash'
-        ? '.sh'
-        : activeTab?.language === 'python'
-        ? '.py'
-        : '.txt';
+          ? '.js'
+          : activeTab?.language === 'typescript'
+            ? '.ts'
+            : activeTab?.language === 'json'
+              ? '.json'
+              : activeTab?.language === 'css'
+                ? '.css'
+                : activeTab?.language === 'html'
+                  ? '.html'
+                  : activeTab?.language === 'bash'
+                    ? '.sh'
+                    : activeTab?.language === 'python'
+                      ? '.py'
+                      : '.txt';
 
     const fileName = saveFileName.endsWith(extension) ? saveFileName : `${saveFileName}${extension}`;
     const file = createFile(savePath, fileName, activeTab?.content || '');
-    
+
     setTabs((prev) =>
       prev.map((t) =>
         t.id === activeTabId
           ? {
-              ...t,
-              title: fileName,
-              fileId: file.id,
-              isModified: false,
-              language: detectLanguageFromName(fileName),
-            }
+            ...t,
+            title: fileName,
+            fileId: file.id,
+            isModified: false,
+            language: detectLanguageFromName(fileName),
+          }
           : t
       )
     );
-    
+
     setShowSaveDialog(false);
     soundManager.playTick();
   };
@@ -423,14 +453,16 @@ export function NotepadApp({ windowId, fileId }: NotepadAppProps) {
         { regex: /\*\*([^*]+)\*\*/, render: (m: RegExpMatchArray) => <strong key={`b-${i}-${segKey++}`}>{m[1]}</strong> },
         { regex: /\*([^*]+)\*/, render: (m: RegExpMatchArray) => <em key={`i-${i}-${segKey++}`}>{m[1]}</em> },
         { regex: /<u>(.*?)<\/u>/, render: (m: RegExpMatchArray) => <u key={`u-${i}-${segKey++}`}>{m[1]}</u> },
-        { regex: /`([^`]+)`/, render: (m: RegExpMatchArray) => (
-          <code
-            key={`code-inline-${i}-${segKey++}`}
-            className="bg-muted/70 px-1 py-0.5 rounded text-xs font-mono"
-          >
-            {m[1]}
-          </code>
-        ) },
+        {
+          regex: /`([^`]+)`/, render: (m: RegExpMatchArray) => (
+            <code
+              key={`code-inline-${i}-${segKey++}`}
+              className="bg-muted/70 px-1 py-0.5 rounded text-xs font-mono"
+            >
+              {m[1]}
+            </code>
+          )
+        },
       ];
 
       while (remaining.length > 0) {
@@ -482,11 +514,10 @@ export function NotepadApp({ windowId, fileId }: NotepadAppProps) {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              className={`flex items-center gap-2 px-4 py-2 border-r border-border/30 min-w-0 ${
-                tab.id === activeTabId
+              className={`flex items-center gap-2 px-4 py-2 border-r border-border/30 min-w-0 ${tab.id === activeTabId
                   ? 'bg-card text-foreground'
                   : 'text-muted-foreground hover:bg-muted/30'
-              }`}
+                }`}
               onClick={() => {
                 soundManager.playTick();
                 setActiveTabId(tab.id);
@@ -569,26 +600,23 @@ export function NotepadApp({ windowId, fileId }: NotepadAppProps) {
           {isMarkdown && (
             <div className="flex items-center gap-1 text-xs bg-muted/30 rounded-md p-0.5">
               <button
-                className={`px-2 py-1 rounded-sm flex items-center gap-1 ${
-                  viewMode === 'edit' ? 'bg-background text-foreground' : 'text-muted-foreground'
-                }`}
+                className={`px-2 py-1 rounded-sm flex items-center gap-1 ${viewMode === 'edit' ? 'bg-background text-foreground' : 'text-muted-foreground'
+                  }`}
                 onClick={() => setViewMode('edit')}
               >
                 Edit
               </button>
               <button
-                className={`px-2 py-1 rounded-sm flex items-center gap-1 ${
-                  viewMode === 'preview' ? 'bg-background text-foreground' : 'text-muted-foreground'
-                }`}
+                className={`px-2 py-1 rounded-sm flex items-center gap-1 ${viewMode === 'preview' ? 'bg-background text-foreground' : 'text-muted-foreground'
+                  }`}
                 onClick={() => setViewMode('preview')}
               >
                 <Eye className="w-3 h-3" />
                 Preview
               </button>
               <button
-                className={`px-2 py-1 rounded-sm flex items-center gap-1 ${
-                  viewMode === 'split' ? 'bg-background text-foreground' : 'text-muted-foreground'
-                }`}
+                className={`px-2 py-1 rounded-sm flex items-center gap-1 ${viewMode === 'split' ? 'bg-background text-foreground' : 'text-muted-foreground'
+                  }`}
                 onClick={() => setViewMode('split')}
               >
                 <EyeOff className="w-3 h-3" />

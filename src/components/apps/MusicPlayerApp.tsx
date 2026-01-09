@@ -43,15 +43,45 @@ export function MusicPlayerApp({ windowId, fileId }: MusicPlayerAppProps) {
   useEffect(() => {
     const scanMusicFiles = async () => {
       try {
-        // Try to fetch music manifest file
-        const response = await fetch('/musics/music-manifest.json');
-        if (response.ok) {
-          const manifest = await response.json();
-          if (manifest.songs && Array.isArray(manifest.songs)) {
-            setAudioFiles(manifest.songs);
-            setSongs(manifest.songs);
-            return;
+        const allSongs: Song[] = [];
+
+        // Try to fetch old music manifest file (for backward compatibility)
+        try {
+          const response = await fetch('/musics/music-manifest.json');
+          if (response.ok) {
+            const manifest = await response.json();
+            if (manifest.songs && Array.isArray(manifest.songs)) {
+              allSongs.push(...manifest.songs);
+            }
           }
+        } catch (error) {
+          console.log('Old music manifest not found, continuing...');
+        }
+
+        // Try to fetch new static music manifest
+        try {
+          const response = await fetch('/static/file-system-seed.manifest.json');
+          if (response.ok) {
+            const manifest = await response.json();
+            if (manifest.songs && Array.isArray(manifest.songs)) {
+              // Convert manifest format to Song format
+              const staticSongs: Song[] = manifest.songs.map((song: any) => ({
+                id: `static-${song.id}`,
+                name: song.name,
+                path: song.path.replace('./', '/static/'),
+              }));
+              allSongs.push(...staticSongs);
+            }
+          }
+        } catch (error) {
+          console.log('Static music manifest not found, continuing...');
+        }
+
+        // If we found songs, use them
+        if (allSongs.length > 0) {
+          setAudioFiles(allSongs);
+          setSongs(allSongs);
+          return;
         }
 
         // Fallback: Use known music files
@@ -222,8 +252,8 @@ export function MusicPlayerApp({ windowId, fileId }: MusicPlayerAppProps) {
             <div className="flex flex-col gap-0.5">
               <button
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${viewMode === 'all'
-                    ? 'bg-primary/20 text-foreground'
-                    : 'text-foreground/90 hover:bg-muted/50'
+                  ? 'bg-primary/20 text-foreground'
+                  : 'text-foreground/90 hover:bg-muted/50'
                   }`}
                 onClick={() => setViewMode('all')}
               >
@@ -234,8 +264,8 @@ export function MusicPlayerApp({ windowId, fileId }: MusicPlayerAppProps) {
               <p className="text-xs text-muted-foreground font-medium mb-2 px-2">Favorites</p>
               <button
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${viewMode === 'recent'
-                    ? 'bg-primary/20 text-foreground'
-                    : 'text-foreground/80 hover:bg-muted/50'
+                  ? 'bg-primary/20 text-foreground'
+                  : 'text-foreground/80 hover:bg-muted/50'
                   }`}
                 onClick={() => setViewMode('recent')}
               >
@@ -259,8 +289,8 @@ export function MusicPlayerApp({ windowId, fileId }: MusicPlayerAppProps) {
                   <button
                     key={song.id}
                     className={`flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${currentSong?.id === song.id
-                        ? 'bg-neutral-500/40 text-primary'
-                        : 'bg-muted-foreground/10 hover:bg-muted/50 text-secondary'
+                      ? 'bg-neutral-500/40 text-primary'
+                      : 'bg-muted-foreground/10 hover:bg-muted/50 text-secondary'
                       }`}
                     onClick={() => handleSongClick(song)}
                   >
