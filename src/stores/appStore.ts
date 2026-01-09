@@ -15,7 +15,6 @@ import {
   Image,
   Music,
   MessageSquare,
-  VideoIcon,
   PencilRuler,
 } from 'lucide-react';
 import type { AppDefinition, AppCategory } from '@/types/os';
@@ -155,7 +154,7 @@ const defaultApps: Omit<AppDefinition, 'component'>[] = [
   {
     id: 'photopea',
     name: 'Photopea',
-    icon: VideoIcon,
+    icon: AppIcons.Photopea,
     iconBg: 'bg-gradient-to-br from-red-300 via-red-600 to-red-600',
     category: 'media',
     description: 'Edit amazing photos',
@@ -179,19 +178,21 @@ const defaultApps: Omit<AppDefinition, 'component'>[] = [
     iconBg: 'bg-gradient-to-br from-indigo-500 via-indigo-800 to-indigo-600',
     category: 'productivity',
     description: 'Draw amazing diagrams',
-    isSystemApp: false,
+    isSystemApp: true,
     isInstalled: true,
   },
 ];
 
 const systemAppIds = defaultApps.filter(app => app.isSystemApp).map(app => app.id);
 
+const defaultPinnedAppIds = ['finder', 'terminal', 'settings', 'appstore', 'music', 'browser', 'excalidraw', 'photopea'];
+
 export const useAppStore = create<AppStore>()(
   persist(
     (set, get) => ({
       apps: defaultApps,
       installedAppIds: systemAppIds,
-      pinnedAppIds: systemAppIds,
+      pinnedAppIds: defaultPinnedAppIds,
 
       installApp: (appId) => {
         set((state) => ({

@@ -5,7 +5,8 @@ import {
   Wifi, 
   Volume2, 
   VolumeX,
-  ChevronDown 
+  ChevronDown, 
+  GithubIcon
 } from 'lucide-react';
 import { useSystemStore } from '@/stores/systemStore';
 import { useWindowStore } from '@/stores/windowStore';
@@ -214,6 +215,16 @@ export function TopBar() {
           <Battery className="w-4 h-4 text-foreground" />
           <span className="text-xs text-muted-foreground">100%</span>
         </div>
+
+        <a
+          href="https://github.com/indgeek/aymu-os"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="p-1 hover:bg-muted/30 rounded transition-colors"
+          onClick={() => soundManager.playTick()}
+        >
+          <GithubIcon className="w-4 h-4 text-foreground" />
+        </a>
 
         {/* Time */}
         <span className="text-foreground">{formattedTime}</span>
