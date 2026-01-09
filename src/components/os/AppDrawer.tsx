@@ -36,6 +36,8 @@ export function AppDrawer({ isOpen, onClose }: AppDrawerProps) {
             const customSizes: Record<string, { width: number; height: number }> = {
                 music: { width: 620, height: 400 },
                 browser: { width: 1024, height: 700 },
+                photopea: { width: 1300, height: 750 },
+                excalidraw: { width: 1300, height: 720 },
             };
 
             const initialSize = customSizes[appId];

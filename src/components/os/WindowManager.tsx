@@ -12,6 +12,8 @@ import { MonitorApp } from '../apps/MonitorApp';
 import { DeveloperSettingsApp } from '../apps/DeveloperSettingsApp';
 import { MusicPlayerApp } from '../apps/MusicPlayerApp';
 import { BrowserApp } from '../apps/BrowserApp';
+import { PhotopeaApp } from '../apps/PhotopeaApp';
+import { ExcalidrawApp } from '../apps/ExcalidrawApp';
 
 const appComponents: Record<string, React.ComponentType<{ windowId: string; fileId?: string }>> = {
   finder: FinderApp,
@@ -25,6 +27,8 @@ const appComponents: Record<string, React.ComponentType<{ windowId: string; file
   devsettings: DeveloperSettingsApp,
   music: MusicPlayerApp,
   browser: BrowserApp,
+  photopea: PhotopeaApp,
+  excalidraw: ExcalidrawApp,
 };
 
 export function WindowManager() {
