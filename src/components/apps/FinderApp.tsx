@@ -448,7 +448,7 @@ export function FinderApp({ windowId }: FinderAppProps) {
               {files.map((file) => (
                 <button
                   key={file.id}
-                  className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors w-[100px] max-w-[100px]"
                   onDoubleClick={() => handleItemDoubleClick(file)}
                   onContextMenu={(e) => handleContextMenu(e, file)}
                 >
