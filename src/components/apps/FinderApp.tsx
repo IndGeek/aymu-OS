@@ -444,7 +444,7 @@ export function FinderApp({ windowId }: FinderAppProps) {
               This folder is empty
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-6 gap-4">
+            <div className="flex flex-row flex-wrap gap-4">
               {files.map((file) => (
                 <button
                   key={file.id}
