@@ -71,12 +71,16 @@ export function FinderApp({ windowId }: FinderAppProps) {
     visible: false,
     file: null,
   });
+  const [draggedItem, setDraggedItem] = useState<FileSystemNode | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const getChildren = useFileStore((state) => state.getChildren);
   const deleteNode = useFileStore((state) => state.deleteNode);
   const renameNode = useFileStore((state) => state.renameNode);
+  const moveNode = useFileStore((state) => state.moveNode);
+  const getNodeById = useFileStore((state) => state.getNodeById);
   const openWindow = useWindowStore((state) => state.openWindow);
   const files = getChildren(currentPath);
 
@@ -256,6 +260,115 @@ export function FinderApp({ windowId }: FinderAppProps) {
     setRenameDialog({ visible: false, fileId: '', currentName: '' });
   };
 
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent, file: FileSystemNode) => {
+    e.stopPropagation();
+    setDraggedItem(file);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', file.id);
+
+    // Add a semi-transparent drag image
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5';
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setDraggedItem(null);
+    setDropTarget(null);
+
+    // Reset opacity
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1';
+    }
+  };
+
+  const isDescendant = (parentId: string, childId: string): boolean => {
+    let current = getNodeById(childId);
+    while (current) {
+      if (current.id === parentId) return true;
+      if (!current.parentId) break;
+      current = getNodeById(current.parentId);
+    }
+    return false;
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetFolder: FileSystemNode) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Only allow dropping on folders
+    if (targetFolder.type !== 'folder') return;
+
+    // Don't allow dropping on itself
+    if (draggedItem && draggedItem.id === targetFolder.id) return;
+
+    // Don't allow dropping a folder into its own descendant
+    if (draggedItem && draggedItem.type === 'folder' && isDescendant(draggedItem.id, targetFolder.id)) {
+      return;
+    }
+
+    setDropTarget(targetFolder.id);
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.stopPropagation();
+    // Only clear if we're actually leaving the element (not entering a child)
+    if (e.currentTarget === e.target) {
+      setDropTarget(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetFolder: FileSystemNode) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItem || targetFolder.type !== 'folder') return;
+
+    // Don't allow dropping on itself
+    if (draggedItem.id === targetFolder.id) return;
+
+    // Don't allow dropping a folder into its own descendant
+    if (draggedItem.type === 'folder' && isDescendant(draggedItem.id, targetFolder.id)) {
+      return;
+    }
+
+    // Perform the move
+    moveNode(draggedItem.id, targetFolder.path);
+
+    setDraggedItem(null);
+    setDropTarget(null);
+  };
+
+  // Handle drop on sidebar items (by path)
+  const handleDropOnPath = (e: React.DragEvent, targetPath: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedItem) return;
+
+    const targetFolder = getChildren('/').find(f => f.path === targetPath) ||
+      getChildren('/home').find(f => f.path === targetPath);
+
+    if (!targetFolder) return;
+
+    // Don't allow dropping on itself
+    if (draggedItem.id === targetFolder.id) return;
+
+    // Don't allow dropping a folder into its own descendant
+    if (draggedItem.type === 'folder' && isDescendant(draggedItem.id, targetFolder.id)) {
+      return;
+    }
+
+    // Perform the move
+    moveNode(draggedItem.id, targetPath);
+
+    setDraggedItem(null);
+    setDropTarget(null);
+  };
+
 
   const getFileIcon = (file: FileSystemNode) => {
     if (file.type === 'folder') {
@@ -325,9 +438,17 @@ export function FinderApp({ windowId }: FinderAppProps) {
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDropTarget(item.path);
+                }}
+                onDragLeave={() => setDropTarget(null)}
+                onDrop={(e) => handleDropOnPath(e, item.path)}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${currentPath === item.path
-                  ? 'bg-muted text-primary-background'
-                  : 'text-foreground/80 hover:bg-muted/50'
+                    ? 'bg-muted text-primary-background'
+                    : dropTarget === item.path
+                      ? 'bg-primary/20 ring-2 ring-primary'
+                      : 'text-foreground/80 hover:bg-muted/50'
                   }`}
                 onClick={() => navigateTo(item.path)}
               >
@@ -345,9 +466,17 @@ export function FinderApp({ windowId }: FinderAppProps) {
             {systemFolders.map((item) => (
               <button
                 key={item.id}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDropTarget(item.path);
+                }}
+                onDragLeave={() => setDropTarget(null)}
+                onDrop={(e) => handleDropOnPath(e, item.path)}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${currentPath === item.path
-                  ? 'bg-muted text-primary-background'
-                  : 'text-foreground/80 hover:bg-muted/50'
+                    ? 'bg-muted text-primary-background'
+                    : dropTarget === item.path
+                      ? 'bg-primary/20 ring-2 ring-primary'
+                      : 'text-foreground/80 hover:bg-muted/50'
                   }`}
                 onClick={() => navigateTo(item.path)}
               >
@@ -448,7 +577,14 @@ export function FinderApp({ windowId }: FinderAppProps) {
               {files.map((file) => (
                 <button
                   key={file.id}
-                  className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors w-[100px] max-w-[100px]"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, file)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => file.type === 'folder' ? handleDragOver(e, file) : e.preventDefault()}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => file.type === 'folder' ? handleDrop(e, file) : e.preventDefault()}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors w-[100px] max-w-[100px] ${dropTarget === file.id ? 'bg-primary/20 ring-2 ring-primary' : ''
+                    }`}
                   onDoubleClick={() => handleItemDoubleClick(file)}
                   onContextMenu={(e) => handleContextMenu(e, file)}
                 >
@@ -464,7 +600,14 @@ export function FinderApp({ windowId }: FinderAppProps) {
               {files.map((file) => (
                 <button
                   key={file.id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, file)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => file.type === 'folder' ? handleDragOver(e, file) : e.preventDefault()}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => file.type === 'folder' ? handleDrop(e, file) : e.preventDefault()}
+                  className={`flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors ${dropTarget === file.id ? 'bg-primary/20 ring-2 ring-primary' : ''
+                    }`}
                   onDoubleClick={() => handleItemDoubleClick(file)}
                   onContextMenu={(e) => handleContextMenu(e, file)}
                 >
