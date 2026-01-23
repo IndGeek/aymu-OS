@@ -77,7 +77,7 @@ export function FinderApp({ windowId }: FinderAppProps) {
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const getChildren = useFileStore((state) => state.getChildren);
-  const deleteNode = useFileStore((state) => state.deleteNode);
+  const moveToTrash = useFileStore((state) => state.moveToTrash);
   const renameNode = useFileStore((state) => state.renameNode);
   const moveNode = useFileStore((state) => state.moveNode);
   const getNodeById = useFileStore((state) => state.getNodeById);
@@ -214,8 +214,8 @@ export function FinderApp({ windowId }: FinderAppProps) {
         handleItemDoubleClick(contextMenu.file);
         break;
       case 'delete':
-        if (confirm(`Are you sure you want to delete "${contextMenu.file.name}"?`)) {
-          deleteNode(contextMenu.file.id);
+        if (confirm(`Are you sure you want to move "${contextMenu.file.name}" to trash?`)) {
+          moveToTrash(contextMenu.file.id);
         }
         break;
       case 'rename':
@@ -369,6 +369,19 @@ export function FinderApp({ windowId }: FinderAppProps) {
     setDropTarget(null);
   };
 
+  const handleEmptyTrash = () => {
+    const trashItems = getChildren('/home/.trash');
+    if (trashItems.length === 0) {
+      alert('Trash is already empty');
+      return;
+    }
+
+    if (confirm(`Are you sure you want to permanently delete ${trashItems.length} item(s)?`)) {
+      const deleteNode = useFileStore.getState().deleteNode;
+      trashItems.forEach(item => deleteNode(item.id));
+    }
+  };
+
 
   const getFileIcon = (file: FileSystemNode) => {
     if (file.type === 'folder') {
@@ -445,10 +458,10 @@ export function FinderApp({ windowId }: FinderAppProps) {
                 onDragLeave={() => setDropTarget(null)}
                 onDrop={(e) => handleDropOnPath(e, item.path)}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${currentPath === item.path
-                    ? 'bg-muted text-primary-background'
-                    : dropTarget === item.path
-                      ? 'bg-primary/20 ring-2 ring-primary'
-                      : 'text-foreground/80 hover:bg-muted/50'
+                  ? 'bg-muted text-primary-background'
+                  : dropTarget === item.path
+                    ? 'bg-primary/20 ring-2 ring-primary'
+                    : 'text-foreground/80 hover:bg-muted/50'
                   }`}
                 onClick={() => navigateTo(item.path)}
               >
@@ -473,10 +486,10 @@ export function FinderApp({ windowId }: FinderAppProps) {
                 onDragLeave={() => setDropTarget(null)}
                 onDrop={(e) => handleDropOnPath(e, item.path)}
                 className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${currentPath === item.path
-                    ? 'bg-muted text-primary-background'
-                    : dropTarget === item.path
-                      ? 'bg-primary/20 ring-2 ring-primary'
-                      : 'text-foreground/80 hover:bg-muted/50'
+                  ? 'bg-muted text-primary-background'
+                  : dropTarget === item.path
+                    ? 'bg-primary/20 ring-2 ring-primary'
+                    : 'text-foreground/80 hover:bg-muted/50'
                   }`}
                 onClick={() => navigateTo(item.path)}
               >
@@ -491,7 +504,21 @@ export function FinderApp({ windowId }: FinderAppProps) {
         <div>
           <p className="text-xs text-muted-foreground font-medium mb-2 px-2">Locations</p>
           <div className="flex flex-col gap-0.5">
-            <button className="flex items-center gap-2 px-2 py-1.5 rounded-md text-foreground hover:bg-muted/50">
+            <button
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDropTarget('/home/.trash');
+              }}
+              onDragLeave={() => setDropTarget(null)}
+              onDrop={(e) => handleDropOnPath(e, '/home/.trash')}
+              className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${currentPath === '/home/.trash'
+                ? 'bg-muted text-primary-background'
+                : dropTarget === '/home/.trash'
+                  ? 'bg-primary/20 ring-2 ring-primary'
+                  : 'text-foreground/80 hover:bg-muted/50'
+                }`}
+              onClick={() => navigateTo('/home/.trash')}
+            >
               <Trash2 className="w-4 h-4" />
               <span>Trash</span>
             </button>
@@ -538,6 +565,16 @@ export function FinderApp({ windowId }: FinderAppProps) {
           </div>
 
           <div className="flex-1" />
+
+          {/* Empty Trash Button (only visible in trash) */}
+          {currentPath === '/home/.trash' && (
+            <button
+              onClick={handleEmptyTrash}
+              className="px-3 py-1 text-xs rounded-md bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors"
+            >
+              Empty Trash
+            </button>
+          )}
 
           {/* View Toggle */}
           <div className="flex items-center gap-1 border border-border rounded-md p-0.5">

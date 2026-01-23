@@ -10,6 +10,7 @@ interface FileStore {
   createFile: (parentPath: string, name: string, content?: string) => FileSystemNode;
   createFolder: (parentPath: string, name: string) => FileSystemNode;
   deleteNode: (id: string) => void;
+  moveToTrash: (id: string) => void;
   renameNode: (id: string, newName: string) => void;
   updateFileContent: (id: string, content: string) => void;
   moveNode: (id: string, newParentPath: string) => void;
@@ -36,6 +37,7 @@ const baseFileSystem: FileSystemNode[] = [
   { id: 'downloads', name: 'Downloads', type: 'folder', path: '/home/Downloads', parentId: 'home', createdAt: new Date(), modifiedAt: new Date() },
   { id: 'pictures', name: 'Pictures', type: 'folder', path: '/home/Pictures', parentId: 'home', createdAt: new Date(), modifiedAt: new Date() },
   { id: 'music', name: 'Music', type: 'folder', path: '/home/Music', parentId: 'home', createdAt: new Date(), modifiedAt: new Date() },
+  { id: 'trash', name: '.trash', type: 'folder', path: '/home/.trash', parentId: 'home', createdAt: new Date(), modifiedAt: new Date() },
 
   // Sample files
   {
@@ -139,6 +141,52 @@ export const useFileStore = create<FileStore>()(
         set((state) => ({
           files: state.files.filter(f => !idsToDelete.includes(f.id)),
         }));
+      },
+
+      moveToTrash: (id) => {
+        const node = get().getNodeById(id);
+        if (!node) return;
+
+        const trashPath = '/home/.trash';
+        const trashFolder = get().getNodeByPath(trashPath);
+        if (!trashFolder) return;
+
+        // Check if item with same name already exists in trash
+        const existingInTrash = get().getChildren(trashPath).find(f => f.name === node.name);
+        const newName = existingInTrash
+          ? `${node.name}_${Date.now()}`
+          : node.name;
+
+        const newPath = `${trashPath}/${newName}`;
+
+        // Recursively update paths for the node and all its descendants
+        const updateNodePaths = (nodeId: string, oldBasePath: string, newBasePath: string) => {
+          set((state) => ({
+            files: state.files.map(f => {
+              if (f.id === nodeId) {
+                return {
+                  ...f,
+                  name: nodeId === id ? newName : f.name,
+                  path: newBasePath,
+                  parentId: nodeId === id ? trashFolder.id : f.parentId,
+                  modifiedAt: new Date(),
+                };
+              }
+              // Update descendants
+              if (f.path.startsWith(oldBasePath + '/')) {
+                const relativePath = f.path.substring(oldBasePath.length);
+                return {
+                  ...f,
+                  path: newBasePath + relativePath,
+                  modifiedAt: new Date(),
+                };
+              }
+              return f;
+            }),
+          }));
+        };
+
+        updateNodePaths(id, node.path, newPath);
       },
 
       renameNode: (id, newName) => {
