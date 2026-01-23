@@ -124,3 +124,8 @@ export interface BootLogEntry {
   color: 'cyan' | 'magenta' | 'green' | 'yellow' | 'red' | 'white';
   delay: number;
 }
+
+export type BatteryState = {
+  batteryLevel: number | null;
+  charging: boolean | null;
+};

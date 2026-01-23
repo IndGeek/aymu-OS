@@ -6,13 +6,15 @@ import {
   Volume2, 
   VolumeX,
   ChevronDown, 
-  GithubIcon
+  GithubIcon,
+  BatteryCharging
 } from 'lucide-react';
 import { useSystemStore } from '@/stores/systemStore';
 import { useWindowStore } from '@/stores/windowStore';
 import { useAppStore } from '@/stores/appStore';
 import { soundManager } from '@/lib/sounds';
-import type { MenuItem } from '@/types/os';
+import type { MenuItem, BatteryState } from '@/types/os';
+import { useBattery } from '@/hooks/use-battery';
 
 const appMenus: Record<string, { label: string; items: MenuItem[] }[]> = {
   finder: [
@@ -110,6 +112,8 @@ export function TopBar() {
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  const { batteryLevel, charging } = useBattery();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -212,8 +216,8 @@ export function TopBar() {
 
         {/* Battery */}
         <div className="flex items-center gap-1">
-          <Battery className="w-4 h-4 text-foreground" />
-          <span className="text-xs text-muted-foreground">100%</span>
+          {charging ? <BatteryCharging className="w-4 h-4 text-foreground" /> : <Battery className="w-4 h-4 text-foreground" />}
+          <span className="text-xs text-muted-foreground">{batteryLevel}%</span>
         </div>
 
         <a
